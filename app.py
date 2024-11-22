@@ -6,29 +6,31 @@ app = Flask(__name__)
 
 stocks = {}
 
+
 @app.route('/stocks', methods=['GET'])
-def getStocks():
+def get_stocks():
     try:
         return jsonify(list(stocks.values())), 200
     except Exception as e:
         print("Exception:", str(e))
         return jsonify({"server error": str(e)}), 500
 
+
 @app.route('/stocks', methods=['POST'])
-def addStock():
+def add_stock():
     try:
         content_type = request.headers.get('Content-Type')
         if content_type != 'application/json':
             return jsonify({"error": "Expected application/json media type"}), 415
-        
+
         data = request.get_json()
 
         required_fields = ['symbol', 'purchase_price', 'shares']
         if not all(field in data for field in required_fields):
             return jsonify({"error": "Missing required fields"}), 400
-        
+
         # Generating a unique ID for the stock
-        newId = str(uuid.uuid4())
+        new_id = str(uuid.uuid4())
 
         name = data.get('name', 'NA')
         purchase_date = data.get('purchase_date', 'NA')
@@ -37,7 +39,7 @@ def addStock():
             return jsonify({"error": "purchase_price should be a number and shares should be an integer"}), 400
 
         stock = {
-            'id': newId,
+            'id': new_id,
             'name': name,
             'symbol': data['symbol'],
             'purchase_price': data['purchase_price'],
@@ -45,26 +47,27 @@ def addStock():
             'shares': data['shares']
         }
 
-        stocks[newId] = stock
-        response_data = {"id": newId}
+        stocks[new_id] = stock
+        response_data = {"id": new_id}
         return jsonify(response_data), 201
     except Exception as e:
         print("Exception:", str(e))
         return jsonify({"server error": str(e)}), 500
 
+
 @app.route('/stocks/<stock_id>', methods=['GET'])
-def getStock(stock_id):
+def get_stock(stock_id):
     try:
-        stock = stocks[stock_id]
+        return jsonify(stocks[stock_id]), 200
     except KeyError:
         return jsonify({"error": "Stock not found"}), 404
     except Exception as e:
         print("Exception:", str(e))
         return jsonify({"error": "Internal server error"}), 500
-    return jsonify(stock), 200
+
 
 @app.route('/stocks/<stock_id>', methods=['DELETE'])
-def delStock(stock_id):
+def delete_stock(stock_id):
     try:
         del stocks[stock_id]
         return '', 204
@@ -74,12 +77,13 @@ def delStock(stock_id):
         print("Exception:", str(e))
         return jsonify({"error": "Internal server error"}), 500
 
+
 @app.route('/stocks/<stock_id>', methods=['PUT'])
-def updateStock(stock_id):
+def update_stock(stock_id):
     try:
         if stock_id not in stocks:
             return jsonify({"error": "Stock not found"}), 404
-        
+
         content_type = request.headers.get('Content-Type')
         if content_type != 'application/json':
             return jsonify({"error": "Expected application/json media type"}), 415
@@ -88,7 +92,7 @@ def updateStock(stock_id):
         required_fields = ['symbol', 'purchase_price', 'shares']
         if not all(field in data for field in required_fields):
             return jsonify({"error": "Missing required fields"}), 400
-        
+
         name = data.get('name', 'NA')
         purchase_date = data.get('purchase_date', 'NA')
 
@@ -110,15 +114,16 @@ def updateStock(stock_id):
     except Exception as e:
         print("Exception:", str(e))
         return jsonify({"server error": str(e)}), 500
-    
+
+
 @app.route('/stock-value/<stock_id>', methods=['GET'])
-def getStockValue(stock_id):
+def get_stock_value(stock_id):
     try:
         stock = stocks[stock_id]
         symbol = stock['symbol']
         shares = stock['shares']
 
-        api_url = 'https://api.api-ninjas.com/v1/stockprice?ticker={}'.format(symbol)
+        api_url = f'https://api.api-ninjas.com/v1/stockprice?ticker={symbol}'
         api_key = 'w1sLxL3bAN8PgoQY9wap0w==2RArL5FHfhmGgxe1'  # TODO: hide the key in env as Daniel asked
 
         response = requests.get(api_url, headers={'X-Api-Key': api_key})
@@ -138,3 +143,12 @@ def getStockValue(stock_id):
     except Exception as e:
         print("Exception:", str(e))
         return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route('/portfolio-value', methods=['GET'])
+def get_portfolio_value():
+    pass
+
+
+if __name__ == '__main__':
+    app.run()
