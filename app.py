@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 import uuid
+import requests
 
 app = Flask(__name__)
 
@@ -109,3 +110,31 @@ def updateStock(stock_id):
     except Exception as e:
         print("Exception:", str(e))
         return jsonify({"server error": str(e)}), 500
+    
+@app.route('/stock-value/<stock_id>', methods=['GET'])
+def getStockValue(stock_id):
+    try:
+        stock = stocks[stock_id]
+        symbol = stock['symbol']
+        shares = stock['shares']
+
+        api_url = 'https://api.api-ninjas.com/v1/stockprice?ticker={}'.format(symbol)
+        api_key = 'w1sLxL3bAN8PgoQY9wap0w==2RArL5FHfhmGgxe1'  # TODO: hide the key in env as Daniel asked
+
+        response = requests.get(api_url, headers={'X-Api-Key': api_key})
+        if response.status_code == requests.codes.ok:
+            ticker = response.json()['price']
+            stock_value = shares * ticker
+            stock_value = {
+                'symbol': symbol,
+                'ticker': ticker,
+                'stock_value': stock_value
+            }
+            return jsonify(stock_value), 200
+        else:
+            return jsonify({"error": "Failed to fetch stock price"}), response.status_code
+    except KeyError:
+        return jsonify({"error": "Stock not found"}), 404
+    except Exception as e:
+        print("Exception:", str(e))
+        return jsonify({"error": "Internal server error"}), 500
